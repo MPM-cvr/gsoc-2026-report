@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.18">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Miguel Pámanes Morales">
+
+<title>Hybrid/Quantum Latent Diffusion Models</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="index_files/libs/clipboard/clipboard.min.js"></script>
+<script src="index_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="index_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="index_files/libs/quarto-html/popper.min.js"></script>
+<script src="index_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="index_files/libs/quarto-html/anchor.min.js"></script>
+<link href="index_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="index_files/libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="index_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="index_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="index_files/libs/bootstrap/bootstrap-fd4ce6a93889265bbc530423f71fa064.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<style>
+
+      .quarto-title-block .quarto-title-banner h1,
+      .quarto-title-block .quarto-title-banner h2,
+      .quarto-title-block .quarto-title-banner h3,
+      .quarto-title-block .quarto-title-banner h4,
+      .quarto-title-block .quarto-title-banner h5,
+      .quarto-title-block .quarto-title-banner h6
+      {
+        color: #ffffff;
+      }
+
+      .quarto-title-block .quarto-title-banner {
+        color: #ffffff;
+background: #111827;
+      }
+</style>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="quarto-light">
+
+<header id="title-block-header" class="quarto-title-block default page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-body">
+      <h1 class="title">Hybrid/Quantum Latent Diffusion Models</h1>
+            <p class="subtitle lead">High-Resolution Simulation with Classical and Quantum Generative Models</p>
+                      </div>
+  </div>
+    
+  
+  <div class="quarto-title-meta">
+
+      <div>
+      <div class="quarto-title-meta-heading">Author</div>
+      <div class="quarto-title-meta-contents">
+               <p>Miguel Pámanes Morales </p>
+            </div>
+    </div>
+      
+    
+      
+    </div>
+    
+  
+  </header><div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#project-overview" id="toc-project-overview" class="nav-link active" data-scroll-target="#project-overview">Project Overview</a></li>
+  <li><a href="#introduction" id="toc-introduction" class="nav-link" data-scroll-target="#introduction"><span class="header-section-number">1</span> Introduction</a></li>
+  <li><a href="#dataset-and-preprocessing" id="toc-dataset-and-preprocessing" class="nav-link" data-scroll-target="#dataset-and-preprocessing"><span class="header-section-number">2</span> Dataset and Preprocessing</a></li>
+  <li><a href="#classical-diffusion-and-physics-aware-improvements" id="toc-classical-diffusion-and-physics-aware-improvements" class="nav-link" data-scroll-target="#classical-diffusion-and-physics-aware-improvements"><span class="header-section-number">3</span> Classical Diffusion and Physics-Aware Improvements</a>
+  <ul class="collapse">
+  <li><a href="#models-and-training-objective" id="toc-models-and-training-objective" class="nav-link" data-scroll-target="#models-and-training-objective"><span class="header-section-number">3.1</span> Models and Training Objective</a></li>
+  <li><a href="#image-space-results" id="toc-image-space-results" class="nav-link" data-scroll-target="#image-space-results"><span class="header-section-number">3.2</span> Image-Space Results</a></li>
+  </ul></li>
+  <li><a href="#latent-diffusion" id="toc-latent-diffusion" class="nav-link" data-scroll-target="#latent-diffusion"><span class="header-section-number">4</span> Latent Diffusion</a>
+  <ul class="collapse">
+  <li><a href="#vae-and-conditional-denoising" id="toc-vae-and-conditional-denoising" class="nav-link" data-scroll-target="#vae-and-conditional-denoising"><span class="header-section-number">4.1</span> VAE and Conditional Denoising</a></li>
+  <li><a href="#classical-generation-results" id="toc-classical-generation-results" class="nav-link" data-scroll-target="#classical-generation-results"><span class="header-section-number">4.2</span> Classical Generation Results</a></li>
+  </ul></li>
+  <li><a href="#quantum-and-hybrid-models" id="toc-quantum-and-hybrid-models" class="nav-link" data-scroll-target="#quantum-and-hybrid-models"><span class="header-section-number">5</span> Quantum and Hybrid Models</a>
+  <ul class="collapse">
+  <li><a href="#earlier-quantum-architectures" id="toc-earlier-quantum-architectures" class="nav-link" data-scroll-target="#earlier-quantum-architectures"><span class="header-section-number">5.1</span> Earlier Quantum Architectures</a></li>
+  <li><a href="#ablation-guided-hybrid-design" id="toc-ablation-guided-hybrid-design" class="nav-link" data-scroll-target="#ablation-guided-hybrid-design"><span class="header-section-number">5.2</span> Ablation-Guided Hybrid Design</a></li>
+  <li><a href="#quantum-core-latent-denoising" id="toc-quantum-core-latent-denoising" class="nav-link" data-scroll-target="#quantum-core-latent-denoising"><span class="header-section-number">5.3</span> Quantum-Core Latent Denoising</a></li>
+  <li><a href="#extended-training-and-controls" id="toc-extended-training-and-controls" class="nav-link" data-scroll-target="#extended-training-and-controls"><span class="header-section-number">5.4</span> Extended Training and Controls</a></li>
+  </ul></li>
+  <li><a href="#results-and-classicalquantum-comparison" id="toc-results-and-classicalquantum-comparison" class="nav-link" data-scroll-target="#results-and-classicalquantum-comparison"><span class="header-section-number">6</span> Results and Classical–Quantum Comparison</a>
+  <ul class="collapse">
+  <li><a href="#denoising-and-circuit-contribution" id="toc-denoising-and-circuit-contribution" class="nav-link" data-scroll-target="#denoising-and-circuit-contribution"><span class="header-section-number">6.1</span> Denoising and Circuit Contribution</a></li>
+  <li><a href="#generated-sample-quality" id="toc-generated-sample-quality" class="nav-link" data-scroll-target="#generated-sample-quality"><span class="header-section-number">6.2</span> Generated-Sample Quality</a></li>
+  <li><a href="#cost-and-scope-of-the-comparison" id="toc-cost-and-scope-of-the-comparison" class="nav-link" data-scroll-target="#cost-and-scope-of-the-comparison"><span class="header-section-number">6.3</span> Cost and Scope of the Comparison</a></li>
+  </ul></li>
+  <li><a href="#challenges-and-lessons-learned" id="toc-challenges-and-lessons-learned" class="nav-link" data-scroll-target="#challenges-and-lessons-learned"><span class="header-section-number">7</span> Challenges and Lessons Learned</a></li>
+  <li><a href="#conclusions-and-future-work" id="toc-conclusions-and-future-work" class="nav-link" data-scroll-target="#conclusions-and-future-work"><span class="header-section-number">8</span> Conclusions and Future Work</a></li>
+  <li><a href="#code-and-deliverables" id="toc-code-and-deliverables" class="nav-link" data-scroll-target="#code-and-deliverables"><span class="header-section-number">9</span> Code and Deliverables</a></li>
+  <li><a href="#acknowledgements" id="toc-acknowledgements" class="nav-link" data-scroll-target="#acknowledgements">Acknowledgements</a></li>
+  <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references">References</a></li>
+  </ul>
+</nav>
+</div>
+<main class="content quarto-banner-title-block" id="quarto-document-content">
+
+
+
+
+
+<div class="project-kicker">
+<p>Google Summer of Code 2026 · ML4SCI · QMLHEP</p>
+</div>
+<section id="project-overview" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="project-overview">Project Overview</h2>
+<p>This Google Summer of Code project investigated classical and hybrid quantum–classical generative models for sparse quark and gluon jet images. I developed image-space diffusion baselines, a conditional latent diffusion pipeline, and several ways to incorporate parametrized quantum circuits into denoising. The final experiments replaced the latent U-Net with compact denoisers built around quantum circuits and evaluated them against classical and circuit-based controls.</p>
+<p>The trained circuits contributed to denoising, but the completed comparisons did not establish an overall advantage over a compact classical alternative. The classical latent U-Net remained the strongest quality reference. The work provides implementations, diagnostics, and controlled comparisons for assessing quantum participation in this setting.</p>
+<p><strong>Project code:</strong> <a href="https://github.com/ReyGuadarrama/Quantum-Latent-Diffusion-Models-for-High-Resolution-Simulation">GitHub repository</a>. Links to the available implementations accompany the experimental sections.</p>
+</section>
+<section id="introduction" class="level1" data-number="1">
+<h1 data-number="1"><span class="header-section-number">1</span> Introduction</h1>
+<p>High-energy physics experiments require large samples of simulated particle interactions and detector responses. Generative models offer a way to investigate faster simulation approaches, but sparse detector images require more than visual agreement: generated samples must also reproduce occupancy, integrated signal, and spatial distributions.</p>
+<p>Diffusion models learn to reverse a noise process <span class="citation" data-cites="ho2020ddpm">(<a href="#ref-ho2020ddpm" role="doc-biblioref">Ho et al. 2020</a>)</span>. Latent diffusion performs this process in a compressed representation obtained from an autoencoder <span class="citation" data-cites="rombach2022ldm">(<a href="#ref-rombach2022ldm" role="doc-biblioref">Rombach et al. 2022</a>)</span>, which also provides smaller inputs for quantum processing. The project therefore progressed from classical image-space models to conditional latent diffusion and then to hybrid quantum–classical denoisers.</p>
+<p>The quantum investigation asked two questions: can trainable circuits contribute meaningfully to denoising, and does that contribution improve performance over suitable classical alternatives? Denoising loss, generated-sample observables, and computational cost were evaluated separately to answer these questions.</p>
+</section>
+<section id="dataset-and-preprocessing" class="level1" data-number="2">
+<h1 data-number="2"><span class="header-section-number">2</span> Dataset and Preprocessing</h1>
+<p>The experiments used preprocessed (<span class="math inline">\(64\times64\times3\)</span>) jet images from a dataset of approximately 139,000 events, with quark/gluon labels and Tracker, ECAL, and HCAL channels. The data are highly sparse: approximately 95% of pixels are inactive. This makes background suppression and the preservation of localized signals central to the evaluation.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="Images/output.png" class="img-fluid figure-img" style="width:100.0%"></p>
+<figcaption>Representative gluon and quark jet images. The first three columns show Tracker, ECAL, and HCAL; the last shows their false-color combination.</figcaption>
+</figure>
+</div>
+<p>Earlier image-space experiments used logarithmically transformed, normalized inputs. The final quantum-core comparison used a reproducible 80/10/10 train/validation/test partition with seed 42, selecting 10,000 training and 2,500 validation events. Its notebook also defined a separate 2,500-event test subset; the results reported here use validation data rather than that test subset.</p>
+<p>For this final comparison, each image channel was scaled using the 99.5th percentile of active training pixels, clipped to (<span class="math inline">\([0,1]\)</span>), and mapped to (<span class="math inline">\([-1,1]\)</span>). The same fitted scales were applied to validation data. Latents were subsequently standardized using training statistics. These preprocessing steps were shared by the models within that comparison; numerical results from different experimental stages should be interpreted within their stated evaluation protocols.</p>
+<p>Throughout the result tables, <strong>integrated intensity</strong> denotes the sum of normalized pixel values after mapping images to (<span class="math inline">\([0,1]\)</span>). It is a diagnostic in preprocessed units, not calibrated energy in GeV. Lower Wasserstein-1 (W1) distances indicate closer agreement with the real-data distributions.</p>
+</section>
+<section id="classical-diffusion-and-physics-aware-improvements" class="level1" data-number="3">
+<h1 data-number="3"><span class="header-section-number">3</span> Classical Diffusion and Physics-Aware Improvements</h1>
+<section id="models-and-training-objective" class="level2" data-number="3.1">
+<h2 data-number="3.1" class="anchored" data-anchor-id="models-and-training-objective"><span class="header-section-number">3.1</span> Models and Training Objective</h2>
+<p>I first implemented a U-Net-based DDPM and explored DDIM sampling <span class="citation" data-cites="song2021ddim">(<a href="#ref-song2021ddim" role="doc-biblioref">Song et al. 2021</a>)</span> and Flow Matching <span class="citation" data-cites="lipman2023flow">(<a href="#ref-lipman2023flow" role="doc-biblioref">Lipman et al. 2023</a>)</span>. These experiments established classical baselines and identified the main failure modes of generation in sparse image space.</p>
+<p>Early models reduced their training loss while generating excessive activity and integrated intensity. Using DDPM as a testbed, I introduced (<span class="math inline">\(v\)</span>)-prediction <span class="citation" data-cites="salimans2022progressive">(<a href="#ref-salimans2022progressive" role="doc-biblioref">Salimans and Ho 2022</a>)</span> and penalties for active cells, unwanted background, and integrated signal. The resulting DDPM objective had the form</p>
+<p><span class="math display">\[
+\mathcal{L}
+=\mathcal{L}_{v}
++\lambda_{\mathrm{active}}\mathcal{L}_{\mathrm{active}}
++\lambda_{\mathrm{bg}}\mathcal{L}_{\mathrm{bg}}
++\lambda_E\mathcal{L}_E.
+\]</span></p>
+<p>The active-cell term emphasized sparse signals, the background term penalized spurious activity, and the integrated-intensity term constrained the overall signal level. The method-specific targets and implementations are documented in the linked notebooks. The comparisons below use common observable definitions rather than assuming that identical notation implies identical prediction targets across methods.</p>
+<p><strong>Source code:</strong> <a href="https://github.com/ReyGuadarrama/Quantum-Latent-Diffusion-Models-for-High-Resolution-Simulation/blob/main/Classical/DIFFUSION/DDPM/Diffusion_Final_DDPM.ipynb">DDPM</a> · <a href="https://github.com/ReyGuadarrama/Quantum-Latent-Diffusion-Models-for-High-Resolution-Simulation/blob/main/Classical/DIFFUSION/DDIM/DDIM_Final.ipynb">DDIM</a> · <a href="https://github.com/ReyGuadarrama/Quantum-Latent-Diffusion-Models-for-High-Resolution-Simulation/blob/main/Classical/DIFFUSION/Flow-Matching/Flow_Matching.ipynb">Flow Matching</a>.</p>
+</section>
+<section id="image-space-results" class="level2" data-number="3.2">
+<h2 data-number="3.2" class="anchored" data-anchor-id="image-space-results"><span class="header-section-number">3.2</span> Image-Space Results</h2>
+<p>The recorded image-space comparison assessed integrated intensity, active-pixel fraction, and participation ratio (PR), which describes how broadly the signal is distributed over pixels.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 11%">
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Model</th>
+<th style="text-align: right;">Mean integrated intensity</th>
+<th style="text-align: right;">Intensity W1 ↓</th>
+<th style="text-align: right;">Active fraction</th>
+<th style="text-align: right;">Active W1 ↓</th>
+<th style="text-align: right;">PR</th>
+<th style="text-align: right;">PR W1 ↓</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Real data</td>
+<td style="text-align: right;">25.536</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">0.047</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">93.162</td>
+<td style="text-align: right;">—</td>
+</tr>
+<tr class="even">
+<td>DDPM</td>
+<td style="text-align: right;">65.507</td>
+<td style="text-align: right;">39.972</td>
+<td style="text-align: right;">0.448</td>
+<td style="text-align: right;">0.401</td>
+<td style="text-align: right;">456.387</td>
+<td style="text-align: right;">363.445</td>
+</tr>
+<tr class="odd">
+<td>DDIM</td>
+<td style="text-align: right;">42.224</td>
+<td style="text-align: right;">16.688</td>
+<td style="text-align: right;">0.295</td>
+<td style="text-align: right;">0.247</td>
+<td style="text-align: right;">169.004</td>
+<td style="text-align: right;">77.283</td>
+</tr>
+<tr class="even">
+<td>Flow Matching</td>
+<td style="text-align: right;">34.928</td>
+<td style="text-align: right;">9.391</td>
+<td style="text-align: right;">0.0282</td>
+<td style="text-align: right;">0.019</td>
+<td style="text-align: right;">109.196</td>
+<td style="text-align: right;">20.263</td>
+</tr>
+</tbody>
+</table>
+<p>Flow Matching achieved the closest agreement among these image-space models on the reported W1 metrics. However, remaining discrepancies motivated the transition to latent diffusion. This stage established that evaluation needed to track sparse structure and signal distributions alongside the training loss.</p>
+</section>
+</section>
+<section id="latent-diffusion" class="level1" data-number="4">
+<h1 data-number="4"><span class="header-section-number">4</span> Latent Diffusion</h1>
+<section id="vae-and-conditional-denoising" class="level2" data-number="4.1">
+<h2 data-number="4.1" class="anchored" data-anchor-id="vae-and-conditional-denoising"><span class="header-section-number">4.1</span> VAE and Conditional Denoising</h2>
+<p>I developed a convolutional variational autoencoder (VAE) <span class="citation" data-cites="kingma2014vae">(<a href="#ref-kingma2014vae" role="doc-biblioref">Kingma and Welling 2014</a>)</span> to map detector images into a spatial latent representation. Training combined reconstruction and Kullback–Leibler regularization, with additional attention to sparse reconstruction. The final quantum-comparison pipeline used (<span class="math inline">\(4\times16\times16\)</span>) latents and occupancy-aware decoding to suppress unwanted background.</p>
+<p>A class-conditional U-Net learned denoising in this latent space. The VAE was frozen during denoiser training, and generated latents were decoded back into detector images. This established both a classical quality reference and a shared representation for the later quantum experiments.</p>
+<p><strong>Source code:</strong> <a href="https://github.com/ReyGuadarrama/Quantum-Latent-Diffusion-Models-for-High-Resolution-Simulation/tree/main/Classical/VAE">VAE experiments</a> · <a href="https://github.com/ReyGuadarrama/Quantum-Latent-Diffusion-Models-for-High-Resolution-Simulation/tree/main/Classical/LDM">Classical LDM implementations</a>.</p>
+</section>
+<section id="classical-generation-results" class="level2" data-number="4.2">
+<h2 data-number="4.2" class="anchored" data-anchor-id="classical-generation-results"><span class="header-section-number">4.2</span> Classical Generation Results</h2>
+<p>The standalone classical LDM evaluation used 10,000 training jets, 2,500 validation events, and approximately 2,500 generated jets balanced between the two classes. The following table summarizes that evaluation; the later classical–quantum comparison uses a separate 500-sample generation protocol.</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Class</th>
+<th>Metric</th>
+<th style="text-align: right;">Real</th>
+<th style="text-align: right;">Generated</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Gluon</td>
+<td>Mean integrated intensity</td>
+<td style="text-align: right;">25.148</td>
+<td style="text-align: right;">24.443</td>
+</tr>
+<tr class="even">
+<td></td>
+<td>Active-pixel fraction</td>
+<td style="text-align: right;">4.63%</td>
+<td style="text-align: right;">5.00%</td>
+</tr>
+<tr class="odd">
+<td></td>
+<td>Maximum intensity</td>
+<td style="text-align: right;">0.935</td>
+<td style="text-align: right;">0.851</td>
+</tr>
+<tr class="even">
+<td>Quark</td>
+<td>Mean integrated intensity</td>
+<td style="text-align: right;">24.995</td>
+<td style="text-align: right;">24.434</td>
+</tr>
+<tr class="odd">
+<td></td>
+<td>Active-pixel fraction</td>
+<td style="text-align: right;">4.63%</td>
+<td style="text-align: right;">4.96%</td>
+</tr>
+<tr class="even">
+<td></td>
+<td>Maximum intensity</td>
+<td style="text-align: right;">0.935</td>
+<td style="text-align: right;">0.834</td>
+</tr>
+</tbody>
+</table>
+<p>The model reproduced the mean integrated intensity and occupancy reasonably closely for both classes. Maximum intensity remained underestimated, indicating that the sharpest deposits were less accurately reproduced. These results established conditional latent diffusion as a useful classical reference while identifying features that still required improvement.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="Images/gluon_generated_jets.png" class="img-fluid figure-img" style="width:85.0%"></p>
+<figcaption>Representative gluon jets generated by the classical conditional LDM.</figcaption>
+</figure>
+</div>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="Images/quark_generated_jets.png" class="img-fluid figure-img" style="width:85.0%"></p>
+<figcaption>Representative quark jets generated by the classical conditional LDM.</figcaption>
+</figure>
+</div>
+</section>
+</section>
+<section id="quantum-and-hybrid-models" class="level1" data-number="5">
+<h1 data-number="5"><span class="header-section-number">5</span> Quantum and Hybrid Models</h1>
+<p>The quantum experiments were motivated by previous work on hybrid image generation and quantum diffusion for jets <span class="citation" data-cites="tsang2023hybridqgan baidachna2025quantumdiffusion">(<a href="#ref-tsang2023hybridqgan" role="doc-biblioref">Tsang et al. 2023</a>; <a href="#ref-baidachna2025quantumdiffusion" role="doc-biblioref">Baidachna et al. 2025</a>)</span>. They progressed from local circuit adapters to architectures that assigned a larger role to quantum processing.</p>
+<section id="earlier-quantum-architectures" class="level2" data-number="5.1">
+<h2 data-number="5.1" class="anchored" data-anchor-id="earlier-quantum-architectures"><span class="header-section-number">5.1</span> Earlier Quantum Architectures</h2>
+<p>The first implementation introduced a residual PQC adapter at the latent U-Net bottleneck. A structured version then separated content, timestep/class conditioning, and fusion into three eight-qubit circuits. Forward outputs and gradients were checked against a corresponding PennyLane implementation before further architectural development.</p>
+<p>A patchwise approach processed local latent regions with shared circuit parameters. For non-overlapping (<span class="math inline">\(2\times2\)</span>) patches of a four-channel latent, each patch contained 16 features and a jet supplied 64 patches. This reduced the input size handled by each circuit and led to a further variant with spatial mixing.</p>
+<p><strong>Source code:</strong> <a href="https://github.com/ReyGuadarrama/Quantum-Latent-Diffusion-Models-for-High-Resolution-Simulation/blob/main/Quantum/First-Quantum-Bottleneck/LDM_quantum_simple_bottleneck-2.ipynb">Initial bottleneck</a> · <a href="https://github.com/ReyGuadarrama/Quantum-Latent-Diffusion-Models-for-High-Resolution-Simulation/blob/main/Quantum/Second-Structured-Mandatory-Quantum-Bottleneck/LDM_quantum_complex_bottleneck-2.ipynb">Structured bottleneck</a> · <a href="https://github.com/ReyGuadarrama/Quantum-Latent-Diffusion-Models-for-High-Resolution-Simulation/blob/main/Quantum/Third-Pure%20Patchwise%20Quantum%20Denoiser/LDM_pure_patchwise_quantum_denoiser.ipynb">Patchwise denoiser</a> · <a href="https://github.com/ReyGuadarrama/Quantum-Latent-Diffusion-Models-for-High-Resolution-Simulation/blob/main/Quantum/Fourth-Patchwise-PQC%2BSpatial-Mixer/LDM_patchwise_quantum_spatial_mixer.ipynb">Patchwise denoiser with spatial mixing</a>.</p>
+</section>
+<section id="ablation-guided-hybrid-design" class="level2" data-number="5.2">
+<h2 data-number="5.2" class="anchored" data-anchor-id="ablation-guided-hybrid-design"><span class="header-section-number">5.2</span> Ablation-Guided Hybrid Design</h2>
+<p>Classical U-Net ablations showed that removing the (<span class="math inline">\(16\times16\)</span>) skip connection caused the largest validation-loss increase, followed by removing the (<span class="math inline">\(8\times8\)</span>) skip. The deeper skip and bottleneck were less sensitive in that evaluation. This motivated a candidate hybrid layout with quantum processing at the higher latent resolutions.</p>
+<p>The ablations identified sensitive locations in the classical network; they did not establish that quantum replacements would improve them. The quantitative results below concern the separate quantum-core architectures, rather than this candidate U-Net layout.</p>
+</section>
+<section id="quantum-core-latent-denoising" class="level2" data-number="5.3">
+<h2 data-number="5.3" class="anchored" data-anchor-id="quantum-core-latent-denoising"><span class="header-section-number">5.3</span> Quantum-Core Latent Denoising</h2>
+<p>To give circuits a central role in prediction, I replaced the U-Net with a compact denoiser containing three PQCs: content, conditioning, and fusion. Small classical layers projected local features into circuit inputs and mapped circuit readouts back to the latent prediction. Local averaging supplied spatial context before fusion. The frozen VAE, Gaussian diffusion process, and classical sampling procedure were retained.</p>
+<p>Each circuit used eight qubits and three layers with data re-uploading, trainable (<span class="math inline">\(R_Y\)</span>) rotations, and nearest-neighbor CNOT operations. Pauli-(<span class="math inline">\(Z\)</span>) expectations provided the readout. The three circuits contained 144 trainable rotation parameters in total. Content and fusion parameters were shared across spatial locations, while conditioning was evaluated once per jet.</p>
+<p>All results used differentiable PyTorch state-vector simulation with exact expectation values. Hardware execution, finite-shot measurements, and device noise were not part of these experiments.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 20%">
+<col style="width: 26%">
+<col style="width: 26%">
+<col style="width: 26%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Configuration</th>
+<th style="text-align: right;">Processing grid</th>
+<th style="text-align: right;">Denoiser parameters</th>
+<th style="text-align: right;">Circuit evaluations per jet and step</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Quantum Denoiser with Spatial Downsampling</td>
+<td style="text-align: right;">8×8</td>
+<td style="text-align: right;">984</td>
+<td style="text-align: right;">129</td>
+</tr>
+<tr class="even">
+<td>Quantum Denoiser at Full Latent Resolution</td>
+<td style="text-align: right;">16×16</td>
+<td style="text-align: right;">652</td>
+<td style="text-align: right;">513</td>
+</tr>
+</tbody>
+</table>
+<p>The downsampled model used a strided input projection and pixel-shuffle output. The full-resolution model used stride-one input processing and a direct output projection. Their comparison therefore changes projection layers as well as processing resolution. Both configurations use eight-qubit circuits; the grid dimensions do not denote qubit counts.</p>
+</section>
+<section id="extended-training-and-controls" class="level2" data-number="5.4">
+<h2 data-number="5.4" class="anchored" data-anchor-id="extended-training-and-controls"><span class="header-section-number">5.4</span> Extended Training and Controls</h2>
+<p>After a five-epoch pilot, the full-resolution architecture was trained to a total of 20 epochs. This was a continuation of the same architecture. Three controls were included:</p>
+<ul>
+<li><strong>Fixed circuits:</strong> quantum rotations remained at initialization while classical interfaces were trained.</li>
+<li><strong>Compact classical denoiser:</strong> small multilayer perceptrons replaced the circuits, giving 685 trainable parameters.</li>
+<li><strong>Separable circuits:</strong> CNOT operations were removed before training.</li>
+</ul>
+<p>The full-resolution comparisons shared initial classical interface parameters, batch order, diffusion timesteps, and Gaussian noise. They used 10,000 training and 2,500 validation jets, batch size eight, and Adam with initial learning rate (<span class="math inline">\(10^{-3}\)</span>). The objective was (<span class="math inline">\(\mathcal{L}_{v}+0.15\mathcal{L}_{\mathrm{tail}}\)</span>), where the second term is a weighted smooth-(<span class="math inline">\(L_1\)</span>) error on estimated clean latents, emphasizing large-magnitude components. Validation used fixed noise and timesteps.</p>
+</section>
+</section>
+<section id="results-and-classicalquantum-comparison" class="level1" data-number="6">
+<h1 data-number="6"><span class="header-section-number">6</span> Results and Classical–Quantum Comparison</h1>
+<section id="denoising-and-circuit-contribution" class="level2" data-number="6.1">
+<h2 data-number="6.1" class="anchored" data-anchor-id="denoising-and-circuit-contribution"><span class="header-section-number">6.1</span> Denoising and Circuit Contribution</h2>
+<p>At 20 epochs, the downsampled quantum model reached a validation loss of 0.873301, compared with 0.923740 for fixed circuits and 0.853802 for its classical control. The full-resolution five-epoch pilot reached 0.901046, close to the downsampled model’s 0.902609 within its first five epochs. This initial comparison did not establish a clear resolution benefit.</p>
+<p>The extended full-resolution study produced the following results. Parameter counts refer only to the denoiser and exclude the shared VAE.</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Model</th>
+<th style="text-align: right;">Trainable parameters</th>
+<th style="text-align: right;">Epochs</th>
+<th style="text-align: right;">Validation loss ↓</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Classical U-Net reference</td>
+<td style="text-align: right;">1,127,876</td>
+<td style="text-align: right;">100</td>
+<td style="text-align: right;">0.666561</td>
+</tr>
+<tr class="even">
+<td>Quantum Denoiser (16×16)</td>
+<td style="text-align: right;">652</td>
+<td style="text-align: right;">20</td>
+<td style="text-align: right;">0.861606</td>
+</tr>
+<tr class="odd">
+<td>Classical Denoiser (16×16)</td>
+<td style="text-align: right;">685</td>
+<td style="text-align: right;">20</td>
+<td style="text-align: right;">0.862798</td>
+</tr>
+<tr class="even">
+<td>Fixed-Circuit Control</td>
+<td style="text-align: right;">508</td>
+<td style="text-align: right;">20</td>
+<td style="text-align: right;">0.906242</td>
+</tr>
+<tr class="odd">
+<td>Separable-Circuit Control</td>
+<td style="text-align: right;">652</td>
+<td style="text-align: right;">20</td>
+<td style="text-align: right;">0.886733</td>
+</tr>
+</tbody>
+</table>
+<p>The U-Net serves as a quality reference with a different capacity and training budget. The compact classical denoiser provides the closer architectural comparison. The fixed-circuit model has 652 parameters in total, with 144 frozen rotation parameters.</p>
+<p>The trained quantum model reduced validation loss by 4.93% relative to fixed circuits and 2.83% relative to the separable control. However, its difference from the compact classical denoiser was only (<span class="math inline">\(-0.001192\)</span>). A paired bootstrap over validation events gave a 95% interval of (<span class="math inline">\([-0.002673,\;0.000340]\)</span>), which includes zero. All compact models reached their best recorded loss at epoch 20, so these are fixed-budget results rather than demonstrated convergence.</p>
+<p>Resetting individual trained circuits increased validation loss, showing dependence on their learned parameters. Sampled circuit states also exhibited entanglement across the inspected partition. These diagnostics do not establish a quantum advantage: resets disrupt joint adaptation with the interfaces, and the separable control reduces the 144 stored rotation parameters to 24 independent sums, changing effective capacity as well as entangling structure.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="Images/quantum_core_training_validation.png" class="img-fluid figure-img" style="width:100.0%"></p>
+<figcaption>Training (left) and fixed-noise validation (right) over 20 epochs. Q: Quantum Denoiser (16×16); Q_fixed: Fixed-Circuit Control; C: Classical Denoiser (16×16); Q_sep: Separable-Circuit Control.</figcaption>
+</figure>
+</div>
+</section>
+<section id="generated-sample-quality" class="level2" data-number="6.2">
+<h2 data-number="6.2" class="anchored" data-anchor-id="generated-sample-quality"><span class="header-section-number">6.2</span> Generated-Sample Quality</h2>
+<p>Models generated 500 jets, 250 per class, using shared initial noise and labels with 50 DDIM steps. The table reports channel-wise W1 distances for integrated normalized intensity. This protocol is separate from the earlier 2,500-sample classical evaluation.</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Model</th>
+<th style="text-align: right;">Tracker W1 ↓</th>
+<th style="text-align: right;">ECAL W1 ↓</th>
+<th style="text-align: right;">HCAL W1 ↓</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Classical U-Net reference</td>
+<td style="text-align: right;">0.612944</td>
+<td style="text-align: right;">0.458670</td>
+<td style="text-align: right;">0.567953</td>
+</tr>
+<tr class="even">
+<td>Quantum Denoiser (16×16)</td>
+<td style="text-align: right;">2.681706</td>
+<td style="text-align: right;">0.904825</td>
+<td style="text-align: right;">1.704352</td>
+</tr>
+<tr class="odd">
+<td>Classical Denoiser (16×16)</td>
+<td style="text-align: right;">2.965319</td>
+<td style="text-align: right;">0.849591</td>
+<td style="text-align: right;">1.407468</td>
+</tr>
+<tr class="even">
+<td>Separable-Circuit Control</td>
+<td style="text-align: right;">0.762381</td>
+<td style="text-align: right;">1.964776</td>
+<td style="text-align: right;">3.151321</td>
+</tr>
+</tbody>
+</table>
+<p>Relative to the compact classical control, the quantum model reduced Tracker intensity W1 by 9.56% and radial-profile error by 14.43%. Their exploratory bootstrap intervals excluded zero. The classical control performed better on HCAL intensity W1 and radial profiles, while the ECAL intensity-W1 difference was inconclusive. The separable control achieved a better Tracker intensity W1 than the entangling model, illustrating that better denoising loss did not imply improvement in every observable.</p>
+<p>Extended quantum training reduced HCAL mean-intensity bias from −47.95% to −16.31%, but increased Tracker bias from +23.71% to +31.81%. Occupancy, peak intensity, and class-dependent distributions also retained discrepancies. The U-Net achieved the lowest intensity W1 in all three channels and remained the strongest overall generative reference in this evaluation.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="Images/quantum_core_mean_images.png" class="img-fluid figure-img" style="width:100.0%"></p>
+<figcaption>Mean images from the 500-event comparison: real data, VAE reconstructions, and the quantum (Q), compact classical (C), and separable (Q sin CNOT) denoisers after 20 epochs. Rows show Tracker, ECAL, and HCAL with a shared color scale within each row.</figcaption>
+</figure>
+</div>
+</section>
+<section id="cost-and-scope-of-the-comparison" class="level2" data-number="6.3">
+<h2 data-number="6.3" class="anchored" data-anchor-id="cost-and-scope-of-the-comparison"><span class="header-section-number">6.3</span> Cost and Scope of the Comparison</h2>
+<p>The 20-epoch full-resolution quantum run required approximately 178 minutes, compared with 3.64 minutes for the compact classical control in the recorded simulation setup. Fewer denoiser parameters therefore did not provide a training-speed advantage. These timings do not describe quantum hardware.</p>
+<p>The comparisons used one training seed. Bootstrap intervals characterize event-sampling uncertainty for the evaluated models, not variability across independent training runs. The generated-observable intervals were exploratory and uncorrected for multiple comparisons. The results support learned circuit participation, but do not establish overall superiority over the classical alternatives.</p>
+</section>
+</section>
+<section id="challenges-and-lessons-learned" class="level1" data-number="7">
+<h1 data-number="7"><span class="header-section-number">7</span> Challenges and Lessons Learned</h1>
+<p>Sparse generation required observable-based evaluation: a decreasing loss could coexist with excess occupancy or inaccurate signal distributions. Comparing VAE reconstructions with generated samples also helped distinguish reconstruction limitations from denoising errors.</p>
+<p>Quantum simulation made computation a central design constraint. Latent compression and shared circuits reduced input and parameter sizes, but preserving more spatial locations increased the number of circuit evaluations. Parameter count alone was therefore an inadequate measure of efficiency.</p>
+<p>The most important methodological lesson was to separate trainability, contribution, and advantage. A circuit can receive gradients and influence predictions without improving on a classical control. Fixed circuits, separable circuits, and compact classical networks addressed different questions; their results required interpretation alongside effective capacity, training budget, and statistical uncertainty.</p>
+</section>
+<section id="conclusions-and-future-work" class="level1" data-number="8">
+<h1 data-number="8"><span class="header-section-number">8</span> Conclusions and Future Work</h1>
+<p>The project produced classical diffusion baselines, a conditional latent diffusion pipeline, and several quantum integration strategies for sparse jet generation. The final architectures gave quantum circuits a direct role in latent denoising and demonstrated a benefit from training their parameters relative to fixed-circuit controls.</p>
+<p>The available results did not establish a general quantum advantage. Performance was close to that of a compact classical denoiser, improvements depended on the detector observable, and classical simulation was substantially slower. The latent U-Net remained the strongest quality reference. The contribution is an implemented experimental framework and evidence that clarifies both the feasibility and current limitations of quantum participation in this task.</p>
+<p>The next priorities are to repeat selected comparisons across training seeds, test stronger compact classical controls, and check class conditioning with paired noise and verified label alignment. Further circuit ablations should better separate entangling structure from effective capacity. Additional quantum training should be guided by reproducible improvements on predefined metrics and their computational cost.</p>
+</section>
+<section id="code-and-deliverables" class="level1" data-number="9">
+<h1 data-number="9"><span class="header-section-number">9</span> Code and Deliverables</h1>
+<p>The classical diffusion, VAE, LDM, and early quantum implementations are incorporated into the <code>main</code> branch of the <a href="https://github.com/ReyGuadarrama/Quantum-Latent-Diffusion-Models-for-High-Resolution-Simulation">project repository</a>. Contributions were made through direct commits under <code>MPM-cvr</code>, including the <a href="https://github.com/ReyGuadarrama/Quantum-Latent-Diffusion-Models-for-High-Resolution-Simulation/commit/0237c316d70290d25ce1a8783c9b2c40c64a9cb2">classical LDM implementation</a> and the <a href="https://github.com/ReyGuadarrama/Quantum-Latent-Diffusion-Models-for-High-Resolution-Simulation/commit/50eb8eee2ec6959e0eb07706041c4cb97430b31b">structured quantum bottleneck</a>. No pull requests are recorded in the reviewed repository history; the linked commits document contributions already present in the project branch.</p>
+<p>The final 8×8 and 16×16 quantum-core notebooks are not yet incorporated into the reviewed <code>main</code> revision. Their publication and experiment links remain pending. This status distinguishes code already available in the project repository from completed local experiments awaiting inclusion.</p>
+<!-- Add verified links to the final quantum-core notebooks after publication. -->
+</section>
+<section id="acknowledgements" class="level1 unnumbered">
+<h1 class="unnumbered">Acknowledgements</h1>
+<p>I thank my GSoC mentors, Tom Magorsch, Masha, Rey Guadarrama, and Isabel Pedraza, for their guidance, feedback, and support. I am also grateful to QMLHEP, ML4SCI, and Google Summer of Code for supporting this project, and to the researchers and open-source contributors whose work provided its theoretical foundations and computational tools.</p>
+</section>
+<section id="references" class="level1 unnumbered">
+<h1 class="unnumbered">References</h1>
+<div id="refs" class="references csl-bib-body hanging-indent" role="list">
+<div id="ref-baidachna2025quantumdiffusion" class="csl-entry" role="listitem">
+Baidachna, Mariia, Rey Guadarrama, Gopal Ramesh Dahale, et al. 2025. <span>“Quantum Diffusion Model for Quark and Gluon Jet Generation.”</span> <em>Proceedings of the AAAI Symposium Series</em> 7 (1): 323–29. <a href="https://doi.org/10.1609/aaaiss.v7i1.36901">https://doi.org/10.1609/aaaiss.v7i1.36901</a>.
+</div>
+<div id="ref-ho2020ddpm" class="csl-entry" role="listitem">
+Ho, Jonathan, Ajay Jain, and Pieter Abbeel. 2020. <span>“Denoising Diffusion Probabilistic Models.”</span> <em>Advances in Neural Information Processing Systems</em> 33. <a href="https://proceedings.neurips.cc/paper/2020/hash/4c5bcfec8584af0d967f1ab10179ca4b-Abstract.html">https://proceedings.neurips.cc/paper/2020/hash/4c5bcfec8584af0d967f1ab10179ca4b-Abstract.html</a>.
+</div>
+<div id="ref-kingma2014vae" class="csl-entry" role="listitem">
+Kingma, Diederik P., and Max Welling. 2014. <span>“Auto-Encoding Variational Bayes.”</span> <em>International Conference on Learning Representations</em>. <a href="https://arxiv.org/abs/1312.6114">https://arxiv.org/abs/1312.6114</a>.
+</div>
+<div id="ref-lipman2023flow" class="csl-entry" role="listitem">
+Lipman, Yaron, Ricky T. Q. Chen, Heli Ben-Hamu, Maximilian Nickel, and Matthew Le. 2023. <span>“Flow Matching for Generative Modeling.”</span> <em>International Conference on Learning Representations</em>. <a href="https://openreview.net/forum?id=PqvMRDCJT9t">https://openreview.net/forum?id=PqvMRDCJT9t</a>.
+</div>
+<div id="ref-rombach2022ldm" class="csl-entry" role="listitem">
+Rombach, Robin, Andreas Blattmann, Dominik Lorenz, Patrick Esser, and Björn Ommer. 2022. <span>“High-Resolution Image Synthesis with Latent Diffusion Models.”</span> <em>Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition</em>, 10684–95. <a href="https://doi.org/10.1109/CVPR52688.2022.01042">https://doi.org/10.1109/CVPR52688.2022.01042</a>.
+</div>
+<div id="ref-salimans2022progressive" class="csl-entry" role="listitem">
+Salimans, Tim, and Jonathan Ho. 2022. <span>“Progressive Distillation for Fast Sampling of Diffusion Models.”</span> <em>International Conference on Learning Representations</em>. <a href="https://openreview.net/forum?id=TIdIXIpzhoI">https://openreview.net/forum?id=TIdIXIpzhoI</a>.
+</div>
+<div id="ref-song2021ddim" class="csl-entry" role="listitem">
+Song, Jiaming, Chenlin Meng, and Stefano Ermon. 2021. <span>“Denoising Diffusion Implicit Models.”</span> <em>International Conference on Learning Representations</em>. <a href="https://openreview.net/forum?id=St1giarCHLP">https://openreview.net/forum?id=St1giarCHLP</a>.
+</div>
+<div id="ref-tsang2023hybridqgan" class="csl-entry" role="listitem">
+Tsang, Shu Lok, Maxwell T. West, Sarah M. Erfani, and Muhammad Usman. 2023. <span>“Hybrid Quantum–Classical Generative Adversarial Network for High-Resolution Image Generation.”</span> <em>IEEE Transactions on Quantum Engineering</em> 4: 1–19. <a href="https://doi.org/10.1109/TQE.2023.3319319">https://doi.org/10.1109/TQE.2023.3319319</a>.
+</div>
+</div>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
