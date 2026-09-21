@@ -2424,7 +2424,7 @@ window.Quarto = {
 <section id="introduction" class="level1" data-number="1">
 <h1 data-number="1"><span class="header-section-number">1</span> Introduction</h1>
 <p>High-energy physics experiments require large samples of simulated particle interactions and detector responses. Generative models offer a way to investigate faster simulation approaches, but sparse detector images require more than visual agreement: generated samples must also reproduce occupancy, integrated signal, and spatial distributions.</p>
-<p>Diffusion models learn to reverse a noise process <span class="citation" data-cites="ho2020ddpm">(<a href="#ref-ho2020ddpm" role="doc-biblioref">Ho et al. 2020</a>)</span>. Latent diffusion performs this process in a compressed representation obtained from an autoencoder <span class="citation" data-cites="rombach2022ldm">(<a href="#ref-rombach2022ldm" role="doc-biblioref">Rombach et al. 2022</a>)</span>, which also provides smaller inputs for quantum processing. The project therefore progressed from classical image-space models to conditional latent diffusion and then to hybrid quantum–classical denoisers.</p>
+<p>Diffusion models learn to reverse a noise process <span class="citation" data-cites="ho2020ddpm">(<a href="#ref-ho2020ddpm" role="doc-biblioref">Ho et al. 2020</a>)</span>. A Latent Diffusion Model (LDM) achieves this in a compressed representation obtained from an autoencoder <span class="citation" data-cites="rombach2022ldm">(<a href="#ref-rombach2022ldm" role="doc-biblioref">Rombach et al. 2022</a>)</span>, which also provides smaller inputs for quantum processing. The project therefore progressed from classical image-space models to conditional latent diffusion and then to hybrid quantum–classical denoisers.</p>
 <p>The quantum investigation asked two questions: can trainable circuits contribute meaningfully to denoising, and does that contribution improve performance over suitable classical alternatives? Denoising loss, generated-sample observables, and computational cost were evaluated separately to answer these questions.</p>
 </section>
 <section id="dataset-and-preprocessing" class="level1" data-number="2">
@@ -2444,7 +2444,7 @@ window.Quarto = {
 <h1 data-number="3"><span class="header-section-number">3</span> Classical Diffusion and Physics-Aware Improvements</h1>
 <section id="models-and-training-objective" class="level2" data-number="3.1">
 <h2 data-number="3.1" class="anchored" data-anchor-id="models-and-training-objective"><span class="header-section-number">3.1</span> Models and Training Objective</h2>
-<p>I first implemented a U-Net-based DDPM and explored DDIM sampling <span class="citation" data-cites="song2021ddim">(<a href="#ref-song2021ddim" role="doc-biblioref">Song et al. 2021</a>)</span> and Flow Matching <span class="citation" data-cites="lipman2023flow">(<a href="#ref-lipman2023flow" role="doc-biblioref">Lipman et al. 2023</a>)</span>. These experiments established classical baselines and identified the main failure modes of generation in sparse image space.</p>
+<p>I first implemented a U-Net-based DDPM (Denoising Diffusion Probabilistic Model) and explored DDIM (Denoising Diffusion Implicit Model) sampling <span class="citation" data-cites="song2021ddim">(<a href="#ref-song2021ddim" role="doc-biblioref">Song et al. 2021</a>)</span> and Flow Matching <span class="citation" data-cites="lipman2023flow">(<a href="#ref-lipman2023flow" role="doc-biblioref">Lipman et al. 2023</a>)</span>. These experiments established classical baselines and identified the main failure modes of generation in sparse image space.</p>
 <p>Early models reduced their training loss while generating excessive activity and integrated intensity. Using DDPM as a testbed, I introduced (<span class="math inline">\(v\)</span>)-prediction <span class="citation" data-cites="salimans2022progressive">(<a href="#ref-salimans2022progressive" role="doc-biblioref">Salimans and Ho 2022</a>)</span> and penalties for active cells, unwanted background, and integrated signal. The resulting DDPM objective had the form</p>
 <p><span class="math display">\[
 \mathcal{L}
@@ -2458,7 +2458,9 @@ window.Quarto = {
 </section>
 <section id="image-space-results" class="level2" data-number="3.2">
 <h2 data-number="3.2" class="anchored" data-anchor-id="image-space-results"><span class="header-section-number">3.2</span> Image-Space Results</h2>
-<p>The recorded image-space comparison assessed integrated intensity, active-pixel fraction, and participation ratio (PR), which describes how broadly the signal is distributed over pixels.</p>
+<p>The recorded image-space comparison assessed three complementary observables: integrated intensity, active-pixel fraction, and participation ratio (PR). Here, integrated intensity denotes the sum of all pixel intensities in the jet image, providing a measure of the total deposited signal. The active-pixel fraction is the fraction of pixels with nonzero intensity, used to characterize image sparsity. The participation ratio measures how broadly the total intensity is distributed across pixels and is defined as <span class="math display">\[
+\mathrm{PR}=\frac{\left(\sum_i x_i\right)^2}{\sum_i x_i^2},
+\]</span> where (x_i) is the intensity of pixel (i). Larger values indicate that the signal is distributed across more pixels, while smaller values correspond to a more localized energy deposition.</p>
 <table class="caption-top table">
 <colgroup>
 <col style="width: 11%">
